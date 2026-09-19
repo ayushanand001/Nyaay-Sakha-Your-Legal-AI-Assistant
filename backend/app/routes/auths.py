@@ -248,3 +248,40 @@ async def resend_otp(data: ResendOTPRequest):
 
     finally:
         conn.close()
+
+
+@router.post("/login")
+def login(data: LoginRequest):
+    conn=get_connection()
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, password_hash FROM users WHERE email = %s",
+                (data.email.lower(),)
+            )
+
+            user = cur.fetchone()
+
+            if not user:
+                raise HTTPException(
+                    status_code=404,
+                    detail="User not found"
+                )
+
+            user_id, password_hash = user
+
+            if not verify_password(data.password, password_hash):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid credentials"
+                )
+
+        token = create_token(user_id)
+
+        return {
+            "message": "Login successful",
+            "token": token
+        }
+    finally:
+        conn.close()
