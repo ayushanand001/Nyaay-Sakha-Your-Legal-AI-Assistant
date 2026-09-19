@@ -13,3 +13,6 @@ class VerifyRegistrationRequest(BaseModel):
 class LoginRequest(BaseModel):
     email:EmailStr
     password:str
+
+class ResendOTPRequest(BaseModel):
+    registration_id: str
