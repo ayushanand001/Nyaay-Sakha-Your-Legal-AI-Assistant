@@ -89,7 +89,6 @@ async def register(data: RegisterRequest):
     finally:
         conn.close()
 
-
 @router.post("/verify-registration")
 def verify_registration(data: VerifyRegistrationRequest):
 
