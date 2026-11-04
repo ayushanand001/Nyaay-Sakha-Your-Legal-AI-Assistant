@@ -1,33 +1,28 @@
 from fastapi import FastAPI
-import resend
-import os
-from app.routes.auths import router as auth_router
+from fastapi.middleware.cors import CORSMiddleware
 
-resend.api_key = os.getenv("RESEND_API_KEY")
-app = FastAPI()
+from app.routes.analysis import router as analysis_router
+from app.routes.auths import router as auth_router
+from app.routes.library import router as library_router
+
+app = FastAPI(title="Nyaay Sakha API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(auth_router)
+app.include_router(analysis_router)
+app.include_router(library_router)
 
 
 @app.get("/")
 def home():
-    return {
-        "message": "Nyaay Sakha API is running"
-    }
-
-@app.post("/send-email")
-def send_email():
-
-    params = {
-        "from": "onboarding@resend.dev",
-        "to": ["your_email@gmail.com"],
-        "subject": "Nyaay Sakha Test",
-        "html": "<h2>Hello from Nyaay Sakha!</h2><p>Resend is working.</p>"
-    }
-
-    email = resend.Emails.send(params)
-
-    return {
-        "message": "Email sent",
-        "email": str(email)
-    }
+    return {"message": "Nyaay Sakha API is running"}

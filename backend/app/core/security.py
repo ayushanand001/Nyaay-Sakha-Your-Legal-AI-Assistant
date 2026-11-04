@@ -27,3 +27,11 @@ def create_token(user_id):
         os.getenv("JWT_SECRET"),
         algorithm="HS256"
     )
+
+
+def decode_token(token):
+    return jwt.decode(
+        token,
+        os.getenv("JWT_SECRET"),
+        algorithms=["HS256"]
+    )
