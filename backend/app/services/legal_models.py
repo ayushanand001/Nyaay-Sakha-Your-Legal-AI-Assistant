@@ -1,9 +1,8 @@
 """
 Hooks for the three legal-document models.
 
-These functions define the inputs and outputs the routes already use.
-LexRank, TF-IDF cosine similarity, and the SVM classifier are not
-implemented here.
+Summaries use the LexRank implementation in lexRank.py.
+TF-IDF cosine similarity and the SVM classifier are not implemented here.
 """
 
 from app.schemas.analysis import (
@@ -11,10 +10,25 @@ from app.schemas.analysis import (
     SimilarCasesResult,
     SummaryResult,
 )
+from app.services.lexRank import lexrank_summarize as run_lexrank
+
+SUMMARY_SENTENCES = 5
 
 
 def lexrank_summarize(text):
-    return SummaryResult()
+    sentences = run_lexrank(
+        text,
+        num_sentences=SUMMARY_SENTENCES,
+        clean_citations=True,
+        strip_headers=True,
+    )
+    summary = " ".join(sentence.strip() for sentence in sentences if sentence.strip())
+
+    return SummaryResult(
+        implemented=True,
+        summary=summary or None,
+        sentences=sentences,
+    )
 
 
 def recommend_similar_cases(text, library, top_k=5):

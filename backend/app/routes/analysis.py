@@ -8,7 +8,8 @@ from app.schemas.analysis import (
     SimilarCasesResponse,
     SummaryResponse,
 )
-from app.services.documents import DISCLAIMER, excerpt, read_case_upload
+from app.services.case_uploads import store_uploaded_case
+from app.services.documents import DISCLAIMER
 from app.services.legal_models import (
     lexrank_summarize,
     library_case_to_dict,
@@ -25,21 +26,17 @@ async def analyze_case(
     file: UploadFile = File(...),
     user=Depends(get_current_user),
 ):
-    filename, text = await read_case_upload(file)
-    library = _precedent_library()
+    text, upload = await store_uploaded_case(file, user["user_id"])
 
     return AnalyzeResponse(
-        filename=filename,
-        characters=len(text),
-        excerpt=excerpt(text),
+        **_document_fields(upload),
         summary=lexrank_summarize(text),
         similar_cases=recommend_similar_cases(
             text,
-            library,
+            _precedent_library(),
             top_k=TOP_SIMILAR_CASES,
         ),
         prediction=predict_outcome(text),
-        disclaimer=DISCLAIMER,
     )
 
 
@@ -48,14 +45,11 @@ async def summarize_case(
     file: UploadFile = File(...),
     user=Depends(get_current_user),
 ):
-    filename, text = await read_case_upload(file)
+    text, upload = await store_uploaded_case(file, user["user_id"])
 
     return SummaryResponse(
-        filename=filename,
-        characters=len(text),
-        excerpt=excerpt(text),
+        **_document_fields(upload),
         summary=lexrank_summarize(text),
-        disclaimer=DISCLAIMER,
     )
 
 
@@ -64,18 +58,15 @@ async def similar_cases(
     file: UploadFile = File(...),
     user=Depends(get_current_user),
 ):
-    filename, text = await read_case_upload(file)
+    text, upload = await store_uploaded_case(file, user["user_id"])
 
     return SimilarCasesResponse(
-        filename=filename,
-        characters=len(text),
-        excerpt=excerpt(text),
+        **_document_fields(upload),
         similar_cases=recommend_similar_cases(
             text,
             _precedent_library(),
             top_k=TOP_SIMILAR_CASES,
         ),
-        disclaimer=DISCLAIMER,
     )
 
 
@@ -84,15 +75,22 @@ async def predict_case(
     file: UploadFile = File(...),
     user=Depends(get_current_user),
 ):
-    filename, text = await read_case_upload(file)
+    text, upload = await store_uploaded_case(file, user["user_id"])
 
     return PredictionResponse(
-        filename=filename,
-        characters=len(text),
-        excerpt=excerpt(text),
+        **_document_fields(upload),
         prediction=predict_outcome(text),
-        disclaimer=DISCLAIMER,
     )
+
+
+def _document_fields(upload):
+    return {
+        "filename": upload["filename"],
+        "characters": upload["characters"],
+        "excerpt": upload["excerpt"],
+        "upload": upload,
+        "disclaimer": DISCLAIMER,
+    }
 
 
 def _precedent_library():

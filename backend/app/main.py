@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routes.analysis import router as analysis_router
 from app.routes.auths import router as auth_router
 from app.routes.library import router as library_router
+from app.routes.uploads import router as uploads_router
 
 app = FastAPI(title="Nyaay Sakha API")
 
@@ -19,6 +20,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(uploads_router)
 app.include_router(analysis_router)
 app.include_router(library_router)
 

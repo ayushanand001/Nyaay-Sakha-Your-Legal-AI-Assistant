@@ -18,7 +18,7 @@ def verify_password(password,hashed):
 
 def create_token(user_id):
     payload = {
-        "user_id": user_id,
+        "user_id": str(user_id),
         "exp": datetime.now(timezone.utc) + timedelta(hours=24)
     }
 

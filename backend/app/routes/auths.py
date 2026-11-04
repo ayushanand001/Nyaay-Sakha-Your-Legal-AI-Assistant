@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from app.schemas.auth import RegisterRequest, VerifyRegistrationRequest ,ResendOTPRequest, LoginRequest
 from app.db.database import get_connection
-from app.core.security import hash_password, verify_password
+from app.core.security import create_token, hash_password, verify_password
 from app.core.mail import conf
 from fastapi_mail import FastMail, MessageSchema, MessageType
 from datetime import datetime, timedelta, timezone

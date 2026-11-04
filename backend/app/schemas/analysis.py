@@ -35,10 +35,21 @@ class PredictionResult(BaseModel):
     confidence: float | None = None
 
 
+class UploadRecord(BaseModel):
+    id: str
+    filename: str
+    content_type: str
+    size_bytes: int
+    characters: int
+    excerpt: str
+    created_at: str
+
+
 class AnalyzeResponse(BaseModel):
     filename: str
     characters: int
     excerpt: str
+    upload: UploadRecord
     summary: SummaryResult
     similar_cases: SimilarCasesResult
     prediction: PredictionResult
@@ -49,6 +60,7 @@ class SummaryResponse(BaseModel):
     filename: str
     characters: int
     excerpt: str
+    upload: UploadRecord
     summary: SummaryResult
     disclaimer: str
 
@@ -57,6 +69,7 @@ class SimilarCasesResponse(BaseModel):
     filename: str
     characters: int
     excerpt: str
+    upload: UploadRecord
     similar_cases: SimilarCasesResult
     disclaimer: str
 
@@ -65,6 +78,7 @@ class PredictionResponse(BaseModel):
     filename: str
     characters: int
     excerpt: str
+    upload: UploadRecord
     prediction: PredictionResult
     disclaimer: str
 
