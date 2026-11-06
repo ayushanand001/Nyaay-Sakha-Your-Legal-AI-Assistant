@@ -37,7 +37,7 @@ export default function Login() {
   return (
     <AuthFrame
       title="Sign in"
-      lede="Use the account you verified for Nyaay Sakha."
+      lede="Use the account you verified for NyayaSetu."
     >
       <form className="stack" onSubmit={onSubmit}>
         <Banner kind="ok">
@@ -78,7 +78,7 @@ export function AuthFrame({ title, lede, children }) {
     <div className="public auth-screen">
       <Link to="/" className="mark">
         <span>NS</span>
-        <strong>Nyaay Sakha</strong>
+        <strong>NyayaSetu</strong>
       </Link>
       <section className="paper auth-card">
         <h1>{title}</h1>

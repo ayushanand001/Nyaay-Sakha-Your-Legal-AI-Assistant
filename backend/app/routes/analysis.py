@@ -83,6 +83,18 @@ async def predict_case(
     )
 
 
+@router.get("/precedents/{case_id}")
+def get_precedent_details(
+    case_id: str,
+    user=Depends(get_current_user),
+):
+    from app.services.recommender import get_precedent_by_id
+    case = get_precedent_by_id(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail="Precedent judgment not found")
+    return case
+
+
 def _document_fields(upload):
     return {
         "filename": upload["filename"],

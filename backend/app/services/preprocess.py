@@ -21,12 +21,17 @@ SIGNATURE_LINE = re.compile(
     re.IGNORECASE,
 )
 ANALYSIS_START_PHRASES = [
-    r"Heard\s+(?:learned|Ld\.?|the)\s+",
-    r"We\s+have\s+heard\b",
+    r"Heard\s+(?:learned|Ld\.?|the|counsel|parties|both)\s+",
+    r"(?:We|The\s+Court|This\s+Court)\s+have\s+heard\b",
+    r"(?:The\s+Court|This\s+Court)\s+has\s+heard\b",
     r"Having\s+heard\b",
-    r"We\s+have\s+considered\b",
+    r"(?:We|The\s+Court|This\s+Court)\s+(?:have|has)\s+considered\b",
+    r"Considering\s+(?:the\s+)?(?:facts|submissions|circumstances|allegations|rival|nature)\b",
+    r"Having\s+regard\s+to\b",
+    r"Taking\s+into\s+consideration\b",
     r"The\s+question\s+(?:which|that)\s+(?:arises|falls)",
     r"The\s+short\s+question\b",
+    r"(?:The\s+Court|This\s+Court|We)\s+(?:is|are)\s+of\s+the\s+(?:considered\s+)?(?:view|opinion)\b",
 ]
 # PDF text often keeps "2. We have heard..." on the same line as the previous
 # paragraph, so the phrase is not at the start of a line.
@@ -35,6 +40,15 @@ ANALYSIS_START_RE = re.compile(
     r"(?:(?:\[\d+(?:\.\d+)*\]|\(\d+\)|\d{1,3}[.)])\s+)?"
     + "(?:" + "|".join(ANALYSIS_START_PHRASES) + ")",
     re.IGNORECASE | re.MULTILINE,
+)
+FINAL_OUTCOME_RE = re.compile(
+    r"\b(?:the\s+)?(?:present\s+)?(?:civil\s+|criminal\s+)?(?:appeal|appeals|"
+    r"petition|petitions|application|applications)\s+"
+    r"(?:(?:is|are|stands|stand)\s+)?(?:hereby\s+|accordingly\s+)?"
+    r"(?:partly\s+allowed|allowed|dismissed|withdrawn)\b"
+    r"|\b(?:appeal|petition|application)\s+stands\s+disposed\b"
+    r"|\b(?:appeal|petition|application)\s+is\s+disposed\s+of\b",
+    re.IGNORECASE,
 )
 MIN_MODEL_CHARS = 500
 
@@ -94,9 +108,20 @@ def locate_analysis_start(text):
 
 
 def remove_court_analysis(cleaned_text, analysis_start):
-    if analysis_start is None:
-        return "", "analysis_removal_not_confirmed"
-    model_text = cleaned_text[:analysis_start].strip()
-    if len(model_text) < MIN_MODEL_CHARS:
-        return "", "analysis_removal_too_short"
-    return model_text, "truncated_before_court_analysis"
+    if analysis_start is not None:
+        model_text = cleaned_text[:analysis_start].strip()
+        if len(model_text) >= MIN_MODEL_CHARS:
+            return model_text, "truncated_before_court_analysis"
+
+    # If no analysis start phrase was detected or the prefix was too short,
+    # evaluate the document directly (e.g. petition, brief, or case facts).
+    if len(cleaned_text) >= MIN_MODEL_CHARS:
+        # Strip trailing explicit verdict statement if present to prevent spoiler
+        outcome_match = None
+        for m in FINAL_OUTCOME_RE.finditer(cleaned_text):
+            outcome_match = m
+        if outcome_match and outcome_match.start() >= MIN_MODEL_CHARS:
+            return cleaned_text[:outcome_match.start()].strip(), "truncated_before_verdict"
+        return cleaned_text, "full_document_used"
+
+    return "", "document_too_short"

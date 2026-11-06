@@ -4,10 +4,13 @@ from pydantic import BaseModel, Field
 
 
 class SummaryResult(BaseModel):
-    method: Literal["lexrank"] = "lexrank"
+    method: str = "enhanced_lexrank"
     implemented: bool = False
     summary: str | None = None
     sentences: list[str] = []
+    key_points: list[str] = []
+    reduction_pct: int | None = None
+    word_count: int | None = None
 
 
 class SimilarCase(BaseModel):
@@ -17,22 +20,29 @@ class SimilarCase(BaseModel):
     citation: str | None = None
     court: str | None = None
     decided_year: int | None = None
-    outcome: Literal["Accepted", "Rejected"] | None = None
+    outcome: Literal["Accepted", "Rejected", "Disposed"] | str | None = None
+    detailed_label: str | None = None
+    judge: str | None = None
+    snippet: str | None = None
+    full_text: str | None = None
     similarity: float | None = None
 
 
 class SimilarCasesResult(BaseModel):
-    method: Literal["tfidf_cosine"] = "tfidf_cosine"
+    method: str = "tfidf_cosine"
     implemented: bool = False
     requested: int = 5
+    total_corpus_cases: int | None = None
     cases: list[SimilarCase] = []
 
 
 class PredictionResult(BaseModel):
-    method: Literal["svm"] = "svm"
+    method: str = "lightgbm"
     implemented: bool = False
-    outcome: Literal["Accepted", "Rejected"] | None = None
+    outcome: Literal["Accepted", "Rejected", "Disposed"] | str | None = None
+    detailed_label: str | None = None
     confidence: float | None = None
+    probabilities: dict[str, float] | None = None
     detail: str | None = None
 
 

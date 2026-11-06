@@ -1,5 +1,27 @@
+# ==========================================
+# Backend-specific .gitignore
+# ==========================================
 venv/
+myvenv/
+.venv/
 .env
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 uploads/
+
+# Large Model weights & Recommender stores
+*.joblib
+*.pkl
+*.pickle
+*.parquet
+*.h5
+*.pt
+*.pth
+
+# Exceptions: Allow light deployment pipelines (<10MB)
+!app/services/lightgbm_outcome.joblib
+!app/services/tfidf_vectorizer.joblib
+
+# Strict exclusion for 424MB matrix
+app/services/case_recommender.joblib

@@ -1,3 +1,8 @@
+export function Banner({ tone = 'info', children }) {
+  if (!children) return null
+  return <div className={`banner ${tone}`}>{children}</div>
+}
+
 export function Field({ label, hint, children }) {
   return (
     <label className="field">
@@ -8,17 +13,25 @@ export function Field({ label, hint, children }) {
   )
 }
 
-export function Banner({ kind = 'error', children }) {
-  if (!children) return null
+export function MetaList({ items = [] }) {
   return (
-    <p className={`banner ${kind}`} role={kind === 'error' ? 'alert' : 'status'}>
-      {children}
+    <p className="meta inline-list">
+      {items.map((item, index) => (
+        <span key={index}>{item}</span>
+      ))}
     </p>
   )
 }
 
 export function Outcome({ value }) {
   if (!value) return <span className="pill muted">Pending</span>
-  const tone = value === 'Accepted' ? 'accepted' : 'rejected'
+  const tone =
+    value === 'Accepted'
+      ? 'accepted'
+      : value === 'Rejected'
+      ? 'rejected'
+      : value === 'Disposed'
+      ? 'disposed'
+      : 'muted'
   return <span className={`pill ${tone}`}>{value}</span>
 }

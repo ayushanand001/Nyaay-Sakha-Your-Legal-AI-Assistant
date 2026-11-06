@@ -1,37 +1,35 @@
 import bcrypt
 import jwt
-import os
 from datetime import datetime, timedelta, timezone
+from app.core.config import settings
 
-def hash_password(password):
+def hash_password(password: str) -> str:
     return bcrypt.hashpw(
         password.encode(),
         bcrypt.gensalt()
     ).decode()
 
-def verify_password(password,hashed):
+def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(
         password.encode(),
         hashed.encode()
     )
 
-
-def create_token(user_id):
+def create_token(user_id: str) -> str:
     payload = {
         "user_id": str(user_id),
-        "exp": datetime.now(timezone.utc) + timedelta(hours=24)
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     }
 
     return jwt.encode(
         payload,
-        os.getenv("JWT_SECRET"),
-        algorithm="HS256"
+        settings.JWT_SECRET,
+        algorithm=settings.JWT_ALGORITHM
     )
 
-
-def decode_token(token):
+def decode_token(token: str) -> dict:
     return jwt.decode(
         token,
-        os.getenv("JWT_SECRET"),
-        algorithms=["HS256"]
+        settings.JWT_SECRET,
+        algorithms=[settings.JWT_ALGORITHM]
     )

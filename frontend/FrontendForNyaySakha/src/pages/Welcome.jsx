@@ -8,11 +8,11 @@ const features = [
   },
   {
     title: 'Similar precedents',
-    copy: 'Compare the uploaded case with the stored library and see the five closest past decisions.',
+    copy: 'Compare the uploaded case with 36,000 High Court decisions and see the closest past rulings with complete judgments.',
   },
   {
     title: 'Outcome indication',
-    copy: 'See whether a new case leans Accepted or Rejected, as a planning aid before the hearing.',
+    copy: 'See whether a new case leans Accepted or Rejected with detailed LightGBM class probabilities as a planning aid before the hearing.',
   },
 ]
 
@@ -24,7 +24,7 @@ export default function Welcome() {
       <header className="topbar">
         <Link to="/" className="mark">
           <span>NS</span>
-          <strong>Nyaay Sakha</strong>
+          <strong>NyayaSetu</strong>
         </Link>
         <div className="top-actions">
           {token ? (
@@ -39,10 +39,10 @@ export default function Welcome() {
       </header>
 
       <section className="hero">
-        <p className="eyebrow">Legal companion</p>
+        <p className="eyebrow">Legal Decision Support</p>
         <h1>Read a case once. Keep the argument moving.</h1>
         <p className="lede">
-          Nyaay Sakha condenses a case file, locates related precedents, and
+          NyayaSetu condenses a case file, locates related precedents across 36,000 High Court judgments, and
           gives an early indication of how a similar matter was decided.
           Lawyers and judges remain the decision makers.
         </p>

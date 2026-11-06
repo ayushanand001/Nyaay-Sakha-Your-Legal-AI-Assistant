@@ -15,7 +15,7 @@ export default function Shell() {
       <aside className="side">
         <NavLink to="/" className="mark">
           <span>NS</span>
-          <strong>Nyaay Sakha</strong>
+          <strong>NyayaSetu</strong>
         </NavLink>
         <nav>
           {links.map((link) => (

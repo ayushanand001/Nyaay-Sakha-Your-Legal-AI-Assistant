@@ -1,0 +1,126 @@
+# ==========================================
+# Comprehensive .gitignore for NyayaSetu / Legal AI Assistant
+# Protects against large models, datasets, binaries & environment bloat
+# ==========================================
+
+# --- Virtual Environments ---
+venv/
+myvenv/
+env/
+.env
+.venv
+ENV/
+env.bak/
+venv.bak/
+
+# --- Large Model Files & Serialized Weights (>10MB / Heavy binaries) ---
+*.joblib
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.onnx
+*.pt
+*.pth
+*.bin
+*.model
+*.weights
+*.ckpt
+*.safetensors
+
+# Exception: keep lightweight vectorizer / core model if needed for deployment
+# To track a specific lightweight model, use leading ! e.g. !backend/app/services/lightgbm_outcome.joblib
+!backend/app/services/lightgbm_outcome.joblib
+!backend/app/services/tfidf_vectorizer.joblib
+
+# Explicitly ensure massive 400MB+ recommender matrix is NEVER pushed to git
+backend/app/services/case_recommender.joblib
+models/case_recommender.joblib
+**/case_recommender.joblib
+
+# --- Large Datasets & Archives ---
+*.parquet
+*.feather
+*.arrow
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+*.zip
+*.7z
+*.rar
+*.csv.gz
+*.jsonl
+*.jsonl.gz
+
+# Data directories
+data/
+data/raw/
+data/processed/
+Yearwise_data/
+dataset/
+datasets/
+
+# --- User Uploads & Temporary Storage ---
+uploads/
+backend/uploads/
+**/uploads/*
+!**/uploads/.gitkeep
+temp/
+tmp/
+*.tmp
+
+# --- Python & Bytecode ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Frontend (Node / React / Vite) ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+frontend/**/node_modules/
+frontend/**/dist/
+frontend/**/dist-ssr/
+frontend/**/.local
+frontend/**/.env*.local
+
+# --- IDEs & System Files ---
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~

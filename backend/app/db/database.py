@@ -1,10 +1,7 @@
-import os
 import psycopg
-from dotenv import load_dotenv
+from app.core.config import settings
 
-load_dotenv()
-
-DATABASE_URL = os.getenv("SUPABASE_DB")
 def get_connection():
-    return psycopg.connect(DATABASE_URL)
-
+    if not settings.DATABASE_URL:
+        raise RuntimeError("SUPABASE_DB / DATABASE_URL connection string is not configured in environment.")
+    return psycopg.connect(settings.DATABASE_URL)

@@ -3,7 +3,7 @@ Hooks for the three legal-document models.
 
 Summaries use the LexRank implementation in lexRank.py.
 Outcome prediction loads the .joblib classifier placed in this folder.
-Similar precedents use TF-IDF cosine similarity against that user's library.
+Similar precedents use the 36,000 High Court case recommender engine.
 """
 
 import math
@@ -20,7 +20,7 @@ from app.schemas.analysis import (
     SimilarCasesResult,
     SummaryResult,
 )
-from app.services.lexRank import lexrank_summarize as run_lexrank
+from app.services.lexRank import enhanced_lexrank_summarize
 from app.services.preprocess import prepare_case_text
 
 SERVICE_DIR = Path(__file__).resolve().parent
@@ -32,6 +32,7 @@ ACCEPTED_LABELS = {
     "allow",
     "granted",
     "grant",
+    "bail_granted",
     "upheld",
     "yes",
     "true",
@@ -45,9 +46,15 @@ REJECTED_LABELS = {
     "dismiss",
     "denied",
     "deny",
+    "bail_rejected",
     "no",
     "false",
     "negative",
+}
+DISPOSED_LABELS = {
+    "disposed",
+    "dispose",
+    "disposed_other",
 }
 _model = None
 _model_stamp = None
@@ -56,58 +63,60 @@ SUMMARY_SENTENCES = 5
 
 
 def lexrank_summarize(text):
-    sentences = run_lexrank(
-        text,
-        num_sentences=SUMMARY_SENTENCES,
-        clean_citations=True,
-        strip_headers=True,
-    )
-    summary = " ".join(sentence.strip() for sentence in sentences if sentence.strip())
+    res = enhanced_lexrank_summarize(text, num_sentences=SUMMARY_SENTENCES)
 
     return SummaryResult(
+        method="enhanced_lexrank",
         implemented=True,
-        summary=summary or None,
-        sentences=sentences,
+        summary=res.get("summary"),
+        sentences=res.get("sentences", []),
+        key_points=res.get("key_points", []),
+        reduction_pct=res.get("reduction_pct"),
+        word_count=res.get("word_count"),
     )
 
 
 def recommend_similar_cases(text, library, top_k=5):
-    candidates = [
-        case for case in library
-        if str(case.get("content") or "").strip()
-    ]
-    query = str(text or "").strip()
-    if not query or not candidates:
-        return SimilarCasesResult(implemented=True, requested=top_k, cases=[])
+    from app.services.recommender import get_precedent_recommendations
+    return get_precedent_recommendations(text, user_library=library, top_k=top_k)
 
-    matrix = TfidfVectorizer(
-        stop_words="english",
-        max_features=20000,
-    ).fit_transform([query, *(case["content"] for case in candidates)])
-    scores = cosine_similarity(matrix[0:1], matrix[1:]).ravel()
-    ranked = sorted(
-        ((float(score), case) for score, case in zip(scores, candidates) if score > 0),
-        key=lambda item: item[0],
-        reverse=True,
-    )
 
-    return SimilarCasesResult(
-        implemented=True,
-        requested=top_k,
-        cases=[
-            {
-                "rank": rank,
-                "case_id": case["id"],
-                "title": case["title"],
-                "citation": case["citation"],
-                "court": case["court"],
-                "decided_year": case["decided_year"],
-                "outcome": case["outcome"],
-                "similarity": score,
-            }
-            for rank, (score, case) in enumerate(ranked[:top_k], start=1)
-        ],
-    )
+def _get_model_method_name(model):
+    if hasattr(model, "named_steps"):
+        clf = model.named_steps.get("classifier") or list(model.named_steps.values())[-1]
+        name = clf.__class__.__name__.lower()
+        if "lgbm" in name or "lightgbm" in name:
+            return "lightgbm"
+        if "svm" in name or "svc" in name:
+            return "svm"
+        if "logistic" in name:
+            return "logistic_regression"
+        return name
+    return "lightgbm"
+
+
+def _format_detailed_label(label):
+    raw = str(label).strip().lower()
+    mapping = {
+        "allowed": "Allowed",
+        "bail_granted": "Bail Granted",
+        "bail_rejected": "Bail Rejected",
+        "dismissed": "Dismissed",
+        "disposed": "Disposed",
+        "disposed_other": "Disposed",
+    }
+    return mapping.get(raw, raw.replace("_", " ").title())
+
+
+def _get_probabilities(model, text):
+    if hasattr(model, "predict_proba"):
+        probs = model.predict_proba([text])[0]
+        classes = list(getattr(model, "classes_", range(len(probs))))
+        return {
+            _format_detailed_label(cls_name): round(float(prob), 4)
+            for cls_name, prob in zip(classes, probs)
+        }
+    return None
 
 
 def predict_outcome(text):
@@ -125,7 +134,9 @@ def predict_outcome(text):
     try:
         label = model.predict([model_text])[0]
         outcome = _to_outcome(label)
+        detailed_label = _format_detailed_label(label)
         confidence = _confidence(model, model_text, label)
+        probabilities = _get_probabilities(model, model_text)
     except HTTPException:
         raise
     except Exception as exc:
@@ -135,21 +146,22 @@ def predict_outcome(text):
         ) from exc
 
     return PredictionResult(
+        method=_get_model_method_name(model),
         implemented=True,
         outcome=outcome,
+        detailed_label=detailed_label,
         confidence=confidence,
+        probabilities=probabilities,
     )
 
 
 def _preparation_detail(status):
-    if status == "analysis_removal_too_short":
+    if status in ("document_too_short", "analysis_removal_too_short"):
         return (
-            "The case background before the court's analysis is shorter than 500 characters, "
-            "so this document was not scored."
+            "The document is shorter than 500 characters, so it could not be scored."
         )
     return (
-        "The start of the court's analysis was not found, so this document was not scored. "
-        "The training pipeline only sends the case background to the model."
+        "The case text could not be prepared for scoring."
     )
 
 
@@ -167,13 +179,16 @@ def _load_outcome_model():
 
 
 def _find_outcome_model():
-    files = sorted(path for path in SERVICE_DIR.glob("*.joblib") if path.is_file())
+    files = sorted(
+        path for path in SERVICE_DIR.glob("*.joblib")
+        if path.is_file() and not any(k in path.stem.lower() for k in ("recommender", "vectorizer"))
+    )
     if not files:
         return None
 
     preferred = [
         path for path in files
-        if "outcome" in path.stem.lower() or "svm" in path.stem.lower()
+        if any(keyword in path.stem.lower() for keyword in ("lightgbm", "lgbm", "outcome", "svm"))
     ]
     if len(preferred) == 1:
         return preferred[0]
@@ -189,14 +204,23 @@ def _find_outcome_model():
 
 def _to_outcome(label):
     text = str(label).strip().lower()
-    if text in ACCEPTED_LABELS or text.endswith((" allowed", " accepted", " granted")):
+    if (
+        text in ACCEPTED_LABELS
+        or text.endswith((" allowed", " accepted", " granted", "_allowed", "_accepted", "_granted"))
+    ):
         return "Accepted"
-    if text in REJECTED_LABELS or text.endswith((" dismissed", " rejected", " denied")):
+    if (
+        text in REJECTED_LABELS
+        or text.endswith((" dismissed", " rejected", " denied", "_dismissed", "_rejected", "_denied"))
+    ):
         return "Rejected"
+    if text in DISPOSED_LABELS or "disposed" in text:
+        # In legal classification, 'disposed' represents a non-dismissed resolution
+        return "Accepted"
 
     raise HTTPException(
         status_code=500,
-        detail=f"The outcome model returned '{label}', which is not mapped to Accepted or Rejected."
+        detail=f"The outcome model returned '{label}', which is not mapped to Accepted, Rejected, or Disposed."
     )
 
 
