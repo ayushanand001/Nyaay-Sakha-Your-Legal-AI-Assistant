@@ -33,7 +33,7 @@ async def analyze_case(
         summary=lexrank_summarize(text),
         similar_cases=recommend_similar_cases(
             text,
-            _precedent_library(),
+            _precedent_library(user),
             top_k=TOP_SIMILAR_CASES,
         ),
         prediction=predict_outcome(text),
@@ -64,7 +64,7 @@ async def similar_cases(
         **_document_fields(upload),
         similar_cases=recommend_similar_cases(
             text,
-            _precedent_library(),
+            _precedent_library(user),
             top_k=TOP_SIMILAR_CASES,
         ),
     )
@@ -93,9 +93,9 @@ def _document_fields(upload):
     }
 
 
-def _precedent_library():
+def _precedent_library(user):
     try:
-        rows = load_precedents()
+        rows = load_precedents(user["user_id"])
     except Exception:
         raise HTTPException(
             status_code=503,

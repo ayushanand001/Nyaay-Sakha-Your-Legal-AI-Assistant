@@ -20,16 +20,20 @@ SIGNATURE_LINE = re.compile(
     r"\d{1,2}:\d{2}:\d{2}\s+IST)\s*$",
     re.IGNORECASE,
 )
-ANALYSIS_START_PATTERNS = [
-    r"^\s*(?:\[\d+(?:\.\d+)*\]\s*)?Heard\s+(?:learned|Ld\.?|the)\s+",
-    r"^\s*(?:\[\d+(?:\.\d+)*\]\s*)?We\s+have\s+heard\b",
-    r"^\s*(?:\[\d+(?:\.\d+)*\]\s*)?Having\s+heard\b",
-    r"^\s*(?:\[\d+(?:\.\d+)*\]\s*)?We\s+have\s+considered\b",
-    r"^\s*(?:\[\d+(?:\.\d+)*\]\s*)?The\s+question\s+(?:which|that)\s+(?:arises|falls)",
-    r"^\s*(?:\[\d+(?:\.\d+)*\]\s*)?The\s+short\s+question\b",
+ANALYSIS_START_PHRASES = [
+    r"Heard\s+(?:learned|Ld\.?|the)\s+",
+    r"We\s+have\s+heard\b",
+    r"Having\s+heard\b",
+    r"We\s+have\s+considered\b",
+    r"The\s+question\s+(?:which|that)\s+(?:arises|falls)",
+    r"The\s+short\s+question\b",
 ]
+# PDF text often keeps "2. We have heard..." on the same line as the previous
+# paragraph, so the phrase is not at the start of a line.
 ANALYSIS_START_RE = re.compile(
-    "|".join(f"(?:{pattern})" for pattern in ANALYSIS_START_PATTERNS),
+    r"(?:^|(?<=[.!?])\s+)"
+    r"(?:(?:\[\d+(?:\.\d+)*\]|\(\d+\)|\d{1,3}[.)])\s+)?"
+    + "(?:" + "|".join(ANALYSIS_START_PHRASES) + ")",
     re.IGNORECASE | re.MULTILINE,
 )
 MIN_MODEL_CHARS = 500

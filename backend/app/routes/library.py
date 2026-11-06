@@ -30,7 +30,7 @@ def get_cases(
     user=Depends(get_current_user),
 ):
     try:
-        rows = list_cases(limit)
+        rows = list_cases(user["user_id"], limit)
     except Exception:
         raise HTTPException(
             status_code=503,
@@ -46,7 +46,7 @@ def get_one_case(
     user=Depends(get_current_user),
 ):
     try:
-        row = get_case(case_id)
+        row = get_case(case_id, user["user_id"])
     except Exception as exc:
         _raise_library_error(exc)
 

@@ -3,7 +3,7 @@ Hooks for the three legal-document models.
 
 Summaries use the LexRank implementation in lexRank.py.
 Outcome prediction loads the .joblib classifier placed in this folder.
-TF-IDF cosine similarity is not implemented here.
+Similar precedents use TF-IDF cosine similarity against that user's library.
 """
 
 import math
@@ -12,6 +12,8 @@ from pathlib import Path
 import joblib
 import numpy as np
 from fastapi import HTTPException
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 from app.schemas.analysis import (
     PredictionResult,
@@ -70,9 +72,41 @@ def lexrank_summarize(text):
 
 
 def recommend_similar_cases(text, library, top_k=5):
+    candidates = [
+        case for case in library
+        if str(case.get("content") or "").strip()
+    ]
+    query = str(text or "").strip()
+    if not query or not candidates:
+        return SimilarCasesResult(implemented=True, requested=top_k, cases=[])
+
+    matrix = TfidfVectorizer(
+        stop_words="english",
+        max_features=20000,
+    ).fit_transform([query, *(case["content"] for case in candidates)])
+    scores = cosine_similarity(matrix[0:1], matrix[1:]).ravel()
+    ranked = sorted(
+        ((float(score), case) for score, case in zip(scores, candidates) if score > 0),
+        key=lambda item: item[0],
+        reverse=True,
+    )
+
     return SimilarCasesResult(
+        implemented=True,
         requested=top_k,
-        cases=[]
+        cases=[
+            {
+                "rank": rank,
+                "case_id": case["id"],
+                "title": case["title"],
+                "citation": case["citation"],
+                "court": case["court"],
+                "decided_year": case["decided_year"],
+                "outcome": case["outcome"],
+                "similarity": score,
+            }
+            for rank, (score, case) in enumerate(ranked[:top_k], start=1)
+        ],
     )
 
 

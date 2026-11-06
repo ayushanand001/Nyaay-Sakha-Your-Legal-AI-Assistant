@@ -30,7 +30,7 @@ def fake_insert(**kwargs):
 
 
 case_uploads.insert_upload = fake_insert
-analysis.load_precedents = lambda: []
+analysis.load_precedents = lambda *args, **kwargs: []
 
 client = TestClient(app)
 

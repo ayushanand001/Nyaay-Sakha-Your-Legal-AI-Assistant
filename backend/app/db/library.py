@@ -57,7 +57,7 @@ def insert_case(user_id, case):
         conn.close()
 
 
-def list_cases(limit):
+def list_cases(user_id, limit):
     conn = get_connection()
 
     try:
@@ -68,10 +68,11 @@ def list_cases(limit):
                 SELECT id, title, citation, court, decided_year,
                        outcome, NULL::text AS content, created_by, created_at
                 FROM case_library
+                WHERE created_by = %s
                 ORDER BY created_at DESC
                 LIMIT %s
                 """,
-                (limit,)
+                (user_id, limit)
             )
             rows = cur.fetchall()
         conn.commit()
@@ -80,7 +81,7 @@ def list_cases(limit):
         conn.close()
 
 
-def get_case(case_id):
+def get_case(case_id, user_id):
     conn = get_connection()
 
     try:
@@ -91,9 +92,9 @@ def get_case(case_id):
                 SELECT id, title, citation, court, decided_year,
                        outcome, content, created_by, created_at
                 FROM case_library
-                WHERE id = %s
+                WHERE id = %s AND created_by = %s
                 """,
-                (case_id,)
+                (case_id, user_id)
             )
             row = cur.fetchone()
         conn.commit()
@@ -123,7 +124,7 @@ def delete_case(case_id, user_id):
         conn.close()
 
 
-def load_precedents(limit=500):
+def load_precedents(user_id, limit=500):
     conn = get_connection()
 
     try:
@@ -134,10 +135,11 @@ def load_precedents(limit=500):
                 SELECT id, title, citation, court, decided_year,
                        outcome, content, created_by, created_at
                 FROM case_library
+                WHERE created_by = %s
                 ORDER BY created_at DESC
                 LIMIT %s
                 """,
-                (limit,)
+                (user_id, limit)
             )
             rows = cur.fetchall()
         conn.commit()

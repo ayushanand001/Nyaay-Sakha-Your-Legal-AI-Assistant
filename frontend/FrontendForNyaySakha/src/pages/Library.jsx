@@ -84,8 +84,8 @@ export default function Library() {
         <p className="eyebrow">Stored judgments</p>
         <h1>Precedent library</h1>
         <p className="lede">
-          Past cases kept for similarity search. Each entry needs the judgment
-          text and a decided outcome of Accepted or Rejected.
+          Past cases kept for similarity search on this account. Each entry needs
+          the judgment text and a decided outcome of Accepted or Rejected.
         </p>
       </header>
 

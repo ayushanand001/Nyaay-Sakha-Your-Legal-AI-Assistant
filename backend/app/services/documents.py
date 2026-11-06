@@ -62,7 +62,7 @@ async def read_case_upload(file: UploadFile):
 
 def extract_text(extension, data):
     if extension in {".txt", ".text"}:
-        return data.decode("utf-8", errors="replace").strip()
+        return _clean_extracted_text(data.decode("utf-8", errors="replace"))
 
     text = ""
 
@@ -77,16 +77,22 @@ def extract_text(extension, data):
                 detail="Encrypted PDFs are not supported"
             )
 
-        text = "\n".join((page.extract_text() or "") for page in reader.pages).strip()
+        text = "\n".join((page.extract_text() or "") for page in reader.pages)
     except HTTPException:
         raise
     except Exception:
         text = ""
 
+    text = _clean_extracted_text(text)
     if text:
         return text
 
-    return _extract_pdf_text_fallback(data).strip()
+    return _clean_extracted_text(_extract_pdf_text_fallback(data))
+
+
+def _clean_extracted_text(text):
+    # PostgreSQL rejects NUL bytes, which PDF extractors sometimes emit.
+    return text.replace("\x00", "").strip()
 
 
 def excerpt(text, limit=400):

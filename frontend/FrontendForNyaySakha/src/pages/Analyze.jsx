@@ -227,8 +227,9 @@ function SimilarBlock({ similar }) {
         </ol>
       ) : (
         <p className="quiet">
-          Similar precedents will appear here once the model is connected.
-          Add decided cases under Precedents so the library has something to search.
+          {similar?.implemented
+            ? 'No precedents on this account match this document yet. Add decided cases under Precedents.'
+            : 'Similar precedents will appear here once the model is connected. Add decided cases under Precedents so the library has something to search.'}
         </p>
       )}
     </article>
@@ -243,9 +244,11 @@ function PredictionBlock({ prediction }) {
       <Outcome value={prediction?.outcome} />
       {typeof prediction?.confidence === 'number' ? (
         <p className="meta">Confidence {(prediction.confidence * 100).toFixed(1)}%</p>
-      ) : (
+      ) : null}
+      {prediction?.detail ? <p className="quiet">{prediction.detail}</p> : null}
+      {!prediction?.implemented && !prediction?.detail ? (
         <p className="quiet">The outcome indication will appear here once the model is connected.</p>
-      )}
+      ) : null}
     </article>
   )
 }
