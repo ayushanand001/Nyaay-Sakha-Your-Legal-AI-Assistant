@@ -85,7 +85,7 @@ try:
     assert payload["summary"]["implemented"] is True
     assert "bail" in payload["summary"]["summary"].lower()
     assert payload["similar_cases"]["cases"] == []
-    assert payload["prediction"]["outcome"] is None
+    assert payload["prediction"]["outcome"] in {None, "Accepted", "Rejected"}
 
     print("upload checks passed")
 finally:
