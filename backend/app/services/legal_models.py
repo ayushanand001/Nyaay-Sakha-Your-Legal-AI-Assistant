@@ -19,6 +19,7 @@ from app.schemas.analysis import (
     SummaryResult,
 )
 from app.services.lexRank import lexrank_summarize as run_lexrank
+from app.services.preprocess import prepare_case_text
 
 SERVICE_DIR = Path(__file__).resolve().parent
 ACCEPTED_LABELS = {
@@ -80,10 +81,17 @@ def predict_outcome(text):
     if model is None:
         return PredictionResult()
 
+    model_text, status = prepare_case_text(text)
+    if not model_text:
+        return PredictionResult(
+            implemented=True,
+            detail=_preparation_detail(status),
+        )
+
     try:
-        label = model.predict([text])[0]
+        label = model.predict([model_text])[0]
         outcome = _to_outcome(label)
-        confidence = _confidence(model, text, label)
+        confidence = _confidence(model, model_text, label)
     except HTTPException:
         raise
     except Exception as exc:
@@ -96,6 +104,18 @@ def predict_outcome(text):
         implemented=True,
         outcome=outcome,
         confidence=confidence,
+    )
+
+
+def _preparation_detail(status):
+    if status == "analysis_removal_too_short":
+        return (
+            "The case background before the court's analysis is shorter than 500 characters, "
+            "so this document was not scored."
+        )
+    return (
+        "The start of the court's analysis was not found, so this document was not scored. "
+        "The training pipeline only sends the case background to the model."
     )
 
 

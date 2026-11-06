@@ -33,6 +33,7 @@ class PredictionResult(BaseModel):
     implemented: bool = False
     outcome: Literal["Accepted", "Rejected"] | None = None
     confidence: float | None = None
+    detail: str | None = None
 
 
 class UploadRecord(BaseModel):
