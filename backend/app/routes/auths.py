@@ -79,7 +79,13 @@ async def register(data: RegisterRequest):
             subtype=MessageType.html
         )
 
-        await FastMail(conf).send_message(message)
+        try:
+            await FastMail(conf).send_message(message)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="The verification email could not be sent. Please try again in a moment."
+            ) from exc
 
         return {
             "message": "Registration created. OTP verification required.",
@@ -239,7 +245,13 @@ async def resend_otp(data: ResendOTPRequest):
             subtype=MessageType.html
         )
 
-        await FastMail(conf).send_message(message)
+        try:
+            await FastMail(conf).send_message(message)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="The verification email could not be sent. Please try again in a moment."
+            ) from exc
 
         return {
             "message": "New OTP sent successfully"

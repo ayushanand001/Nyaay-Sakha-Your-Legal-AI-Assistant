@@ -1,8 +1,10 @@
 import os
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "NyayaSetu Backend API"
@@ -22,7 +24,7 @@ class Settings(BaseSettings):
     MAIL_USERNAME: str = os.getenv("EMAIL_USER", "")
     MAIL_PASSWORD: str = os.getenv("EMAIL_PASS", "")
     MAIL_FROM: str = os.getenv("EMAIL_USER", "")
-    MAIL_PORT: int = int(os.getenv("MAIL_PORT", "587"))
+    MAIL_PORT: int = int(os.getenv("MAIL_PORT", "465"))
     MAIL_SERVER: str = os.getenv("MAIL_SERVER", "smtp.gmail.com")
     
     # File Storage
