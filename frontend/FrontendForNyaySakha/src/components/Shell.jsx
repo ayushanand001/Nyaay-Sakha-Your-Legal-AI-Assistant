@@ -4,7 +4,7 @@ import { useAuth } from '../useAuth'
 const links = [
   { to: '/analyze', label: 'Review' },
   { to: '/uploads', label: 'Documents' },
-  { to: '/library', label: 'Precedents' },
+  { to: '/library', label: 'Library' },
 ]
 
 export default function Shell() {

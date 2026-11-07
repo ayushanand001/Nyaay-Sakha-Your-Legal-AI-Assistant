@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../useAuth'
 import { Banner, Outcome } from '../components/ui'
@@ -11,6 +11,26 @@ const modes = [
   { id: 'predict', label: 'Outcome', path: '/analysis/predict' },
 ]
 
+const resultTabs = [
+  { id: 'summary', label: 'Summary' },
+  { id: 'precedents', label: 'Precedents' },
+  { id: 'outcome', label: 'Outcome' },
+]
+
+const loadingStages = [
+  'Reading the case file',
+  'Writing the summary',
+  'Matching precedents',
+  'Estimating the outcome',
+]
+
+const tabForMode = {
+  analyze: 'summary',
+  summarize: 'summary',
+  similar: 'precedents',
+  predict: 'outcome',
+}
+
 export default function Analyze() {
   const { request } = useAuth()
   const [mode, setMode] = useState('analyze')
@@ -18,8 +38,18 @@ export default function Analyze() {
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
   const [result, setResult] = useState(null)
+  const [panel, setPanel] = useState('summary')
+  const [stage, setStage] = useState(0)
   const [dragging, setDragging] = useState(false)
   const [selectedPrecedent, setSelectedPrecedent] = useState(null)
+
+  useEffect(() => {
+    if (!pending) return undefined
+    const timer = setInterval(() => {
+      setStage((current) => Math.min(current + 1, loadingStages.length - 1))
+    }, 1100)
+    return () => clearInterval(timer)
+  }, [pending])
 
   function chooseFile(next) {
     setResult(null)
@@ -64,11 +94,13 @@ export default function Analyze() {
     const selected = modes.find((item) => item.id === mode)
     const formData = new FormData()
     formData.append('file', file)
+    setStage(0)
     setPending(true)
     setError('')
 
     try {
       const data = await request(selected.path, { method: 'POST', formData })
+      setPanel(tabForMode[mode])
       setResult({ mode, data })
     } catch (err) {
       setResult(null)
@@ -140,27 +172,31 @@ export default function Analyze() {
           <Banner tone="error">{error}</Banner>
 
           <button type="submit" disabled={pending || !file}>
-            {pending ? 'Processing review...' : 'Run review'}
+            {pending ? 'Review in progress' : 'Run review'}
           </button>
         </form>
 
-        <section>
-          {result ? (
+        <section className="review-stage">
+          {pending ? <ReviewLoading stage={stage} filename={file?.name} /> : null}
+          {!pending && result ? (
             <ResultView
               mode={result.mode}
+              panel={panel}
+              onPanel={setPanel}
               data={result.data}
               onOpenJudgment={setSelectedPrecedent}
             />
-          ) : (
+          ) : null}
+          {!pending && !result ? (
             <div className="paper quiet">
               <p className="eyebrow">Awaiting document</p>
               <h2>Select an option and upload</h2>
               <p>
-                The backend extracts document text, runs extractive summary, predicts
-                the legal outcome, and recommends similar precedents.
+                A full review opens three tabs: the summary, the closest precedents,
+                and the likely outcome.
               </p>
             </div>
-          )}
+          ) : null}
         </section>
       </div>
 
@@ -174,13 +210,40 @@ export default function Analyze() {
   )
 }
 
-function ResultView({ mode, data, onOpenJudgment }) {
-  const showSummary = mode === 'analyze' || mode === 'summarize'
-  const showSimilar = mode === 'analyze' || mode === 'similar'
-  const showPrediction = mode === 'analyze' || mode === 'predict'
+function ReviewLoading({ stage, filename }) {
+  const progress = ((stage + 1) / loadingStages.length) * 100
 
   return (
-    <div className="stack">
+    <div className="paper loading-card" role="status" aria-live="polite">
+      <p className="eyebrow">Review in progress</p>
+      <h2>{filename || 'Reading the document'}</h2>
+      <div className="loading-track" aria-hidden="true">
+        <span style={{ width: `${progress}%` }} />
+      </div>
+      <ol className="loading-steps">
+        {loadingStages.map((label, index) => {
+          const state = index < stage ? 'done' : index === stage ? 'active' : 'wait'
+          return (
+            <li key={label} className={`loading-step ${state}`}>
+              <span />
+              {label}
+            </li>
+          )
+        })}
+      </ol>
+    </div>
+  )
+}
+
+function ResultView({ mode, panel, onPanel, data, onOpenJudgment }) {
+  const available = {
+    summary: mode === 'analyze' || mode === 'summarize',
+    precedents: mode === 'analyze' || mode === 'similar',
+    outcome: mode === 'analyze' || mode === 'predict',
+  }
+
+  return (
+    <div className="stack result-reveal">
       <article className="paper">
         <p className="eyebrow">Document</p>
         <h2>{data.filename}</h2>
@@ -192,14 +255,50 @@ function ResultView({ mode, data, onOpenJudgment }) {
         {data.upload ? <Link to="/uploads">Open documents</Link> : null}
       </article>
 
-      {showSummary ? <SummaryBlock summary={data.summary} /> : null}
-      {showSimilar ? (
-        <SimilarBlock similar={data.similar_cases} onOpenJudgment={onOpenJudgment} />
-      ) : null}
-      {showPrediction ? <PredictionBlock prediction={data.prediction} /> : null}
+      <div className="result-tabs" role="tablist">
+        {resultTabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={panel === tab.id}
+            className={panel === tab.id ? 'result-tab active' : 'result-tab'}
+            onClick={() => onPanel(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div key={panel} className="panel-enter">
+        {panel === 'summary' ? (
+          available.summary
+            ? <SummaryBlock summary={data.summary} />
+            : <MissingPanel label="summary" />
+        ) : null}
+        {panel === 'precedents' ? (
+          available.precedents
+            ? <SimilarBlock similar={data.similar_cases} onOpenJudgment={onOpenJudgment} />
+            : <MissingPanel label="precedents" />
+        ) : null}
+        {panel === 'outcome' ? (
+          available.outcome
+            ? <PredictionBlock prediction={data.prediction} />
+            : <MissingPanel label="the outcome" />
+        ) : null}
+      </div>
 
       <p className="disclaimer">{data.disclaimer}</p>
     </div>
+  )
+}
+
+function MissingPanel({ label }) {
+  return (
+    <article className="paper quiet">
+      <h2>This review did not include {label}</h2>
+      <p>Run a full review to fill the summary, precedents, and outcome tabs from one upload.</p>
+    </article>
   )
 }
 
