@@ -5,10 +5,10 @@ import { Banner, Outcome } from '../components/ui'
 import { formatBytes } from '../format'
 
 const modes = [
-  { id: 'analyze', label: 'Full review', path: '/analysis/analyze' },
-  { id: 'summarize', label: 'Summary', path: '/analysis/summarize' },
-  { id: 'similar', label: 'Precedents', path: '/analysis/similar-cases' },
-  { id: 'predict', label: 'Outcome', path: '/analysis/predict' },
+  { id: 'analyze', label: 'Full review', hint: 'All three results together', action: 'Run full review', path: '/analysis/analyze' },
+  { id: 'summarize', label: 'Summary', hint: 'A short extract of the case', action: 'Write the summary', path: '/analysis/summarize' },
+  { id: 'similar', label: 'Precedents', hint: 'Closest matches from 36,000 judgments', action: 'Find precedents', path: '/analysis/similar-cases' },
+  { id: 'predict', label: 'Outcome', hint: 'Accepted or Rejected indication', action: 'Estimate the outcome', path: '/analysis/predict' },
 ]
 
 const resultTabs = [
@@ -122,11 +122,16 @@ export default function Analyze() {
       </header>
 
       <div className="split">
-        <form className="paper stack" onSubmit={onSubmit}>
-          <fieldset className="mode-set">
-            <legend>What should come back</legend>
+        <form className="paper review-composer" onSubmit={onSubmit}>
+          <div className="composer-head">
+            <p className="eyebrow">What to return</p>
+            <h2>Choose a review</h2>
+          </div>
+
+          <fieldset className="mode-grid">
+            <legend className="sr-only">What should come back</legend>
             {modes.map((item) => (
-              <label key={item.id} className={mode === item.id ? 'mode on' : 'mode'}>
+              <label key={item.id} className={mode === item.id ? 'mode-card on' : 'mode-card'}>
                 <input
                   type="radio"
                   name="mode"
@@ -135,12 +140,13 @@ export default function Analyze() {
                   onChange={(event) => setMode(event.target.value)}
                 />
                 <span>{item.label}</span>
+                <small>{item.hint}</small>
               </label>
             ))}
           </fieldset>
 
-          <label
-            className={dragging ? 'drop-target active' : 'drop-target'}
+          <div
+            className={`drop-zone${dragging ? ' dragging' : ''}${file ? ' has-file' : ''}`}
             onDragOver={(event) => {
               event.preventDefault()
               setDragging(true)
@@ -152,27 +158,51 @@ export default function Analyze() {
               chooseFile(event.dataTransfer.files?.[0])
             }}
           >
-            <input
-              type="file"
-              accept=".pdf,.txt,.text"
-              onChange={(event) => chooseFile(event.target.files?.[0])}
-            />
+            <label>
+              <input
+                type="file"
+                accept=".pdf,.txt,.text"
+                onChange={(event) => chooseFile(event.target.files?.[0])}
+              />
+              <span className="drop-mark" aria-hidden="true">
+                <svg viewBox="0 0 32 32" width="28" height="28">
+                  <path d="M8 4.5h10.2L24 10.3V26a1.5 1.5 0 0 1-1.5 1.5h-14A1.5 1.5 0 0 1 7 26V6A1.5 1.5 0 0 1 8.5 4.5H8z" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                  <path d="M18 4.8V10h5.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                  <path d="M12 17.5h8M16 13.5v8" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              </span>
+              {file ? (
+                <span className="file-chip">
+                  <strong>{file.name}</strong>
+                  <small>{formatBytes(file.size)} · PDF or text</small>
+                </span>
+              ) : (
+                <span className="drop-copy">
+                  <strong>Drop the case file here</strong>
+                  <small>or browse this computer</small>
+                </span>
+              )}
+            </label>
             {file ? (
-              <span className="file-chip">
-                <strong>{file.name}</strong>
-                <small>{formatBytes(file.size)}</small>
-              </span>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => {
+                  setFile(null)
+                  setError('')
+                }}
+              >
+                Remove file
+              </button>
             ) : (
-              <span>
-                <strong>Drop a PDF or text file here</strong>, or browse your machine.
-              </span>
+              <p className="drop-note">PDF, TXT, or TEXT · up to 8 MB</p>
             )}
-          </label>
+          </div>
 
           <Banner tone="error">{error}</Banner>
 
-          <button type="submit" disabled={pending || !file}>
-            {pending ? 'Review in progress' : 'Run review'}
+          <button className="button review-submit" type="submit" disabled={pending || !file}>
+            {pending ? 'Review in progress' : modes.find((item) => item.id === mode).action}
           </button>
         </form>
 
@@ -188,13 +218,23 @@ export default function Analyze() {
             />
           ) : null}
           {!pending && !result ? (
-            <div className="paper quiet">
+            <div className="paper review-aside">
               <p className="eyebrow">Awaiting document</p>
-              <h2>Select an option and upload</h2>
-              <p>
-                A full review opens three tabs: the summary, the closest precedents,
-                and the likely outcome.
-              </p>
+              <h2>The review appears here</h2>
+              <ol className="review-steps">
+                <li>
+                  <strong>Choose</strong>
+                  <span>A full review, or only the summary, precedents, or outcome.</span>
+                </li>
+                <li>
+                  <strong>Upload</strong>
+                  <span>The original file is kept with your documents.</span>
+                </li>
+                <li>
+                  <strong>Read</strong>
+                  <span>Summary, precedents, and outcome open as separate tabs.</span>
+                </li>
+              </ol>
             </div>
           ) : null}
         </section>

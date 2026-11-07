@@ -24,7 +24,7 @@ export default function Welcome() {
       <header className="topbar">
         <Link to="/" className="mark">
           <span>NS</span>
-          <strong>NyayaSetu</strong>
+          <strong>Nyay Sakha</strong>
         </Link>
         <div className="top-actions">
           {token ? (
@@ -42,7 +42,7 @@ export default function Welcome() {
         <p className="eyebrow">Legal Decision Support</p>
         <h1>Read a case once. Keep the argument moving.</h1>
         <p className="lede">
-          NyayaSetu condenses a case file, locates related precedents across 36,000 High Court judgments, and
+          Nyay Sakha condenses a case file, locates related precedents across 36,000 High Court judgments, and
           gives an early indication of how a similar matter was decided.
           Lawyers and judges remain the decision makers.
         </p>

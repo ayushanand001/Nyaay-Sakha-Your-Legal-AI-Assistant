@@ -26,7 +26,7 @@ export async function api(path, { method = 'GET', token, json, formData } = {}) 
   try {
     response = await fetch(path, { method, headers, body })
   } catch {
-    throw new ApiError(0, 'The Nyaay Sakha API is not reachable.')
+    throw new ApiError(0, 'The Nyay Sakha API is not reachable.')
   }
 
   const text = await response.text()
@@ -55,7 +55,7 @@ export async function downloadFile(path, token, filename) {
       headers: { Authorization: `Bearer ${token}` },
     })
   } catch {
-    throw new ApiError(0, 'The Nyaay Sakha API is not reachable.')
+    throw new ApiError(0, 'The Nyay Sakha API is not reachable.')
   }
 
   if (!response.ok) {
