@@ -84,15 +84,27 @@ def extract_text(extension, data):
         text = ""
 
     text = _clean_extracted_text(text)
-    if text:
+    if _readable_text(text):
         return text
 
-    return _clean_extracted_text(_extract_pdf_text_fallback(data))
+    fallback = _clean_extracted_text(_extract_pdf_text_fallback(data))
+    if _readable_text(fallback):
+        return fallback
+
+    return ""
 
 
 def _clean_extracted_text(text):
     # PostgreSQL rejects NUL bytes, which PDF extractors sometimes emit.
-    return text.replace("\x00", "").strip()
+    return (text or "").replace("\x00", "").strip()
+
+
+def _readable_text(text):
+    sample = text[:5000]
+    if len(sample) < 40:
+        return False
+    readable = sum(character.isalpha() or character.isspace() for character in sample)
+    return readable / len(sample) >= 0.6
 
 
 def excerpt(text, limit=400):
